@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="description" content="결 · GYEOL — 이 전시가 어떻게 만들어졌나. 설계 먼저, 병렬 제작, 전수 검증으로 지은 8관 32작품 미디어 아트." />
+  <title>제작 과정 — 결 · GYEOL</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="./css/style.css" />
+  <style>
+    /* ── making-of 전용 스타일 (style.css의 변수·타이포 재사용) ── */
+    .mk{max-width:52rem;margin-inline:auto;padding:7rem var(--pad) 4rem;}
+    .mk__eyebrow{font-family:var(--mono);font-size:.72rem;letter-spacing:.4em;color:var(--gold);opacity:.9;padding-left:.4em;margin-bottom:1.4rem;}
+    .mk__title{font-size:clamp(2.6rem,8vw,4.4rem);font-weight:700;line-height:1.04;letter-spacing:.02em;margin-bottom:1.5rem;}
+    .mk__title small{display:block;font-family:var(--mono);font-size:.82rem;letter-spacing:.28em;color:var(--paper-faint);font-weight:400;margin-top:1.1rem;}
+    .mk__lead{font-size:clamp(1.05rem,1.5vw,1.22rem);color:var(--paper-dim);max-width:46ch;text-wrap:balance;}
+    .mk section{margin-top:clamp(3rem,7vh,4.75rem);}
+    .mk h2{font-size:clamp(1.55rem,4vw,2.05rem);font-weight:700;line-height:1.25;margin-bottom:1.2rem;letter-spacing:.01em;}
+    .mk h2 .no{font-family:var(--mono);font-size:.6em;color:var(--gold);margin-right:.7em;opacity:.85;}
+    .mk h3{font-size:1.12rem;font-weight:700;color:var(--paper);margin:1.9rem 0 .7rem;}
+    .mk p{color:var(--paper-dim);margin-bottom:1rem;max-width:62ch;}
+    .mk strong{color:var(--paper);font-weight:700;}
+    .mk em{color:var(--gold);font-style:normal;}
+    /* 소요 통계 */
+    .mk__stats{display:flex;flex-wrap:wrap;gap:1.5rem 2.5rem;margin-top:2rem;padding-top:1.8rem;border-top:1px solid var(--hairline);}
+    .stat b{display:block;font-family:var(--mono);font-size:1.4rem;color:var(--paper);font-weight:700;line-height:1.3;}
+    .stat span{font-family:var(--mono);font-size:.64rem;letter-spacing:.16em;color:var(--paper-faint);}
+    #elapsed{color:var(--gold);}
+    /* 비교 2단 */
+    .cmp{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-top:1.6rem;}
+    .cmp__col{border:1px solid var(--hairline);padding:1.5rem 1.4rem;background:linear-gradient(160deg,color-mix(in srgb,var(--paper) 4%,transparent),transparent 62%);}
+    .cmp__col--ours{border-color:var(--hairline-hi);}
+    .cmp__col h3{margin-top:0;font-size:1.02rem;}
+    .cmp__col .tag{font-family:var(--mono);font-size:.64rem;letter-spacing:.2em;color:var(--paper-faint);display:block;margin-bottom:.7rem;}
+    .cmp__col--ours .tag{color:var(--gold);}
+    .cmp ol{list-style:none;counter-reset:s;padding:0;margin:.4rem 0 0;}
+    .cmp li{position:relative;padding-left:2.1rem;margin-bottom:.75rem;font-size:.9rem;color:var(--paper-dim);line-height:1.55;}
+    .cmp li:last-child{margin-bottom:0;}
+    .cmp li::before{counter-increment:s;content:counter(s);position:absolute;left:0;top:.05rem;font-family:var(--mono);font-size:.66rem;color:var(--gold);opacity:.8;border:1px solid var(--hairline);width:1.35rem;height:1.35rem;display:grid;place-items:center;border-radius:50%;}
+    /* 프롬프트 인용 */
+    .prompt{border-left:2px solid var(--hairline-hi);padding:.1rem 0 .1rem 1.3rem;margin:1.3rem 0;}
+    .prompt__q{font-family:var(--mono);font-size:.64rem;letter-spacing:.18em;color:var(--gold);opacity:.85;margin-bottom:.55rem;}
+    .prompt p{font-size:1.02rem;color:var(--paper);margin-bottom:.4rem;line-height:1.65;}
+    .prompt .said{color:var(--paper);}
+    .prompt .note{font-family:var(--mono);font-size:.74rem;color:var(--paper-faint);line-height:1.65;margin-bottom:0;max-width:64ch;}
+    /* 코드 블록 */
+    .code{overflow-x:auto;-webkit-overflow-scrolling:touch;background:color-mix(in srgb,var(--paper) 4%,transparent);border:1px solid var(--hairline);border-radius:8px;padding:1.05rem 1.25rem;margin:1.2rem 0;}
+    .code pre{font-family:var(--mono);font-size:.78rem;line-height:1.75;color:var(--paper-dim);white-space:pre;}
+    .code .c{color:var(--paper-faint);}
+    .code .k{color:var(--gold);}
+    /* 관별 알고리즘 표 */
+    .tbl-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:1.6rem 0;border:1px solid var(--hairline);border-radius:8px;}
+    table.algo{border-collapse:collapse;width:100%;min-width:33rem;font-size:.85rem;}
+    table.algo th,table.algo td{text-align:left;padding:.75rem 1rem;border-bottom:1px solid var(--hairline);vertical-align:top;}
+    table.algo thead th{font-family:var(--mono);font-size:.62rem;letter-spacing:.14em;color:var(--gold);text-transform:uppercase;}
+    table.algo tbody th{font-weight:700;color:var(--paper);white-space:nowrap;}
+    table.algo tbody th .hanja{color:var(--paper-faint);font-weight:400;margin-left:.35em;font-size:.82em;}
+    table.algo td{color:var(--paper-dim);}
+    table.algo tr:last-child td,table.algo tr:last-child th{border-bottom:0;}
+    /* 되돌아가기 */
+    .mk__back{margin-top:clamp(4rem,9vh,5.5rem);padding-top:2rem;border-top:1px solid var(--hairline);}
+    .mk__back a{font-family:var(--mono);font-size:.85rem;letter-spacing:.08em;color:var(--paper-dim);transition:color .3s var(--ease),letter-spacing .4s var(--ease);}
+    .mk__back a:hover{color:var(--gold);letter-spacing:.13em;}
+    @media (max-width:600px){
+      .mk{padding-top:6rem;}
+      .cmp{grid-template-columns:1fr;}
+    }
+  </style>
+</head>
+<body data-view="atrium">
+  <div class="grain" aria-hidden="true"></div>
+  <header class="topbar">
+    <a class="brand" href="./index.html" aria-label="아트리움으로">결 · GYEOL</a>
+  </header>
+
+  <main class="mk">
+    <p class="mk__eyebrow">HOW THIS WAS MADE</p>
+    <h1 class="mk__title">이 전시는 어떻게<br />만들어졌나<small>THE MAKING OF 결 · GYEOL</small></h1>
+    <p class="mk__lead">한 편의 미디어 아트 전시를, 사람의 손이 아니라 설계와 계약과 검증으로 지어 올린 기록입니다.</p>
+
+    <section aria-labelledby="s1">
+      <h2 id="s1"><span class="no">01</span>개요</h2>
+      <p><strong>결 · GYEOL</strong>은 물결, 나뭇결, 숨결, 비단결 — 자연이 스스로 새기는 무늬를 코드로 다시 빚은
+        인터랙티브 미디어 아트 전시입니다. 여덟 개의 관, 서른두 점의 작품. 모두 만지고, 불고, 기울이고,
+        손짓해 볼 수 있습니다.</p>
+      <p>이 전시는 <strong>Generative Hours</strong>라는 앞선 작업에서 출발했습니다. 열한 개 관에 마흔여섯 점의
+        작품을 담은 그 사이트는 Claude와의 이른바 <em>바이브 코딩</em>만으로 사흘이 걸렸다고 합니다.
+        출발점의 물음은 단순했습니다 — <strong>더 빠르게, 그리고 더 훌륭하게 만들 수 있는가.</strong></p>
+      <p>답은 "무엇을 만들까"를 먼저 정하고, "어떻게 만들까"의 규칙을 고정한 뒤, 그 규칙 위에서
+        여러 제작 주체가 동시에 손을 대는 방식이었습니다. 아래는 그 과정의 기록입니다.</p>
+      <div class="mk__stats">
+        <div class="stat"><b>8관 · 32작품</b><span>SCALE OF EXHIBITION</span></div>
+        <div class="stat"><b>2026-07-04 07:13 UTC</b><span>BUILD STARTED</span></div>
+        <div class="stat"><b><span id="elapsed">배포 후 최종 기입</span></b><span>TIME ELAPSED</span></div>
+      </div>
+    </section>
+
+    <section aria-labelledby="s2">
+      <h2 id="s2"><span class="no">02</span>다른 접근</h2>
+      <p>참고한 사이트는 화면을 <strong>만들어 보고, 눈으로 확인하고, 어긋난 곳을 고치는</strong> 반복으로 자라났습니다.
+        빠르고 직관적이지만, 작품이 늘수록 서로의 규칙이 조금씩 어긋나고 확인의 부담이 쌓입니다.</p>
+      <p>결 · GYEOL은 순서를 뒤집었습니다. <strong>먼저 설계를 확정하고, 작품 사이의 인터페이스를 계약으로 못 박은 뒤,
+        그 계약 위에서 여덟 개 관을 동시에 짓고, 마지막에 서른두 점을 전수 자동 검증</strong>했습니다.</p>
+      <div class="cmp">
+        <div class="cmp__col">
+          <span class="tag">REFERENCE — 만들고 · 보고 · 고치기</span>
+          <h3>반복적 시행착오</h3>
+          <ol>
+            <li>화면 하나를 만든다</li>
+            <li>브라우저로 열어 눈으로 본다</li>
+            <li>어긋난 곳을 찾아 고친다</li>
+            <li>작품 수만큼 이 순환을 되풀이한다</li>
+          </ol>
+        </div>
+        <div class="cmp__col cmp__col--ours">
+          <span class="tag">결 · GYEOL — 설계 먼저 · 병렬 제작</span>
+          <h3>계약 기반 병렬 제작</h3>
+          <ol>
+            <li>브레인스토밍 문답으로 요구사항 확정</li>
+            <li>설계 스펙 문서를 승인받아 고정</li>
+            <li>작품 모듈 계약을 인터페이스로 못 박음</li>
+            <li>여덟 에이전트가 서른한 점을 동시 제작</li>
+            <li>32작품 전수 자동 셀프테스트로 검증</li>
+          </ol>
+        </div>
+      </div>
+      <h3>과정을 여덟 걸음으로</h3>
+      <p>① 브레인스토밍 스킬로 요구사항 문답(질문 여섯 개) → ② 설계 스펙 문서 승인 → ③ 스무 개 태스크의
+        구현 계획 수립(작품별 알고리즘까지 명세) → ④ 코어 여덟 개 태스크를 순차 진행하며 <em>각 태스크마다
+        구현 → 전문 리뷰어 검증 → 결함 즉시 수정</em>(카메라 스트림 누수, 포인터 리스너 누수를 발견해 바로 고침)
+        → ⑤ 여덟 개 관, 서른한 점의 작품을 <strong>여덟 개의 AI 에이전트가 병렬로 동시 제작</strong>
+        → ⑥ 서른두 작품 전수 자동 셀프테스트(작품마다 콘솔 에러 · 빈 캔버스 · 프레임 비용 검사)
+        → ⑦ 품질 리뷰 게이트(85점 이상 통과) → ⑧ S3 + CloudFront 배포.</p>
+    </section>
+
+    <section aria-labelledby="s3">
+      <h2 id="s3"><span class="no">03</span>실제로 오간 말</h2>
+      <p>이 전시를 시작하고 결정지은 것은 아래의 몇 마디였습니다. 사람의 발화는 그대로 옮기고,
+        그 사이사이에서 무엇이 자동으로 이루어졌는지 주석으로 덧붙였습니다.</p>
+
+      <div class="prompt">
+        <p class="prompt__q">최초 요청</p>
+        <p class="said">"이 사이트와 유사한 사이트를 만들고 싶어. 미디어 아트라고 하는데 claude vibe코딩으로만
+          3일이 걸렸다고 하는데. 더 빠르고 더 훌륭한 사이트를 만들자. 사용된 프롬프트들은 …/making-of.html 에
+          정리해둠."</p>
+        <p class="note">→ 브레인스토밍 스킬이 자동으로 열려, 목적·컨셉·규모·인터랙션·배포를 묻는 여섯 개의
+          선택형 질문을 준비했습니다.</p>
+      </div>
+
+      <div class="prompt">
+        <p class="prompt__q">선택형 문답 — 여섯 개의 답</p>
+        <p class="said">목적 = "나만의 아트 전시 사이트" · 컨셉 = "한국적 미감 재해석" · 규모 = "8관 32작품" ·
+          인터랙션 = "사운드 + 마이크 + 손 인식 + 자이로 전부" · 배포 = "S3 + CloudFront" ·
+          부가 = "making-of 포함"</p>
+        <p class="note">→ 이 여섯 답이 곧바로 설계 스펙 문서로 정리되어, 이후 모든 태스크의 근거가 되었습니다.</p>
+      </div>
+
+      <div class="prompt">
+        <p class="prompt__q">접근 방식 선택</p>
+        <p class="said">"A"</p>
+        <p class="note">→ 빌드 도구 없는 <em>zero-build</em> 바닐라 ES 모듈 + 지연 로딩 방식을 택했습니다.
+          방문자의 브라우저가 곧 실행 환경이 됩니다.</p>
+      </div>
+
+      <div class="prompt">
+        <p class="prompt__q">승인 · 실행 방식</p>
+        <p class="said">디자인 세 개 섹션에 "네" · "네" · "네", 스펙에 "네에 진행", 실행 방식은
+          "Subagent-Driven (추천)".</p>
+        <p class="note">→ 스펙이 확정되자 스무 개 태스크로 쪼개지고, 코어 여덟 개를 순차로,
+          작품 서른한 점을 여덟 에이전트가 병렬로 지어 올렸습니다.</p>
+      </div>
+    </section>
+
+    <section aria-labelledby="s4">
+      <h2 id="s4"><span class="no">04</span>기술 노트</h2>
+      <p>전시장 전체는 <strong>빌드 도구가 없는 바닐라 ES 모듈</strong>로 되어 있습니다. 번들러도, 컴파일 단계도
+        없이 브라우저가 모듈을 그대로 읽습니다. 각 작품은 필요한 순간에야 지연 로딩됩니다.</p>
+      <p>서른두 점이 한 몸처럼 움직이는 비결은 <strong>작품 모듈 계약</strong>입니다. 모든 작품은 아래 다섯 함수만
+        약속하면 됩니다. 나머지 — 렌더 루프, 리사이즈, 자원 회수 — 는 <code>main.js</code>가 도맡습니다.</p>
+      <div class="code"><pre><span class="c">// 모든 작품이 지키는 계약 (js/works/*.js)</span>
+export default {
+  <span class="k">init</span>(ctx)    <span class="c">{ /* 캔버스·상태 준비. ctx: 캔버스, 크기, 오디오, 센서 */ }</span>,
+  <span class="k">frame</span>(t, dt) <span class="c">{ /* 매 프레임 그린다. RAF 루프는 main.js가 소유 */ }</span>,
+  <span class="k">pointer</span>(e)  <span class="c">{ /* 터치·마우스 입력을 받는다 */ }</span>,
+  <span class="k">resize</span>(w, h) <span class="c">{ /* 뷰포트 변화에 대응한다 */ }</span>,
+  <span class="k">dispose</span>()   <span class="c">{ /* 작품을 떠날 때 모든 자원을 되돌린다 */ }</span>,
+};</pre></div>
+      <p>루프를 <code>main.js</code> 한 곳이 소유하므로, 작품을 바꿀 때 이전 작품의
+        타이머 · 리스너 · GPU 자원이 <code>dispose()</code>에서 남김없이 회수됩니다.
+        검증 단계에서 카메라 스트림과 포인터 리스너가 새는 것을 잡아 이 계약으로 막았습니다.</p>
+      <h3>모두를 위한 폴백</h3>
+      <p>마이크 · 카메라 · 자이로 권한을 거부해도 <strong>모든 작품은 그대로 동작</strong>합니다. 센서 입력이
+        없으면 부드러운 자동 움직임으로 대신하는 폴백이 작품마다 내장되어 있습니다. 소리는 별도 엔진 없이
+        <strong>오음계(五音) Web Audio 엔진</strong>이 담당해, 어떤 상호작용도 우리 가락 안에서 울립니다.</p>
+      <h3>관별 핵심 알고리즘</h3>
+      <div class="tbl-wrap">
+        <table class="algo">
+          <thead><tr><th scope="col">관</th><th scope="col">주제</th><th scope="col">핵심 알고리즘</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">묵향<span class="hanja">墨</span></th><td>수묵의 물성</td><td>유체 확산 · L-system</td></tr>
+            <tr><th scope="row">오방<span class="hanja">五方</span></th><td>색과 문양</td><td>파라메트릭 문양 · 파티클 진법</td></tr>
+            <tr><th scope="row">훈민<span class="hanja">訓民</span></th><td>글자의 기하학</td><td>글자 파티클 조합</td></tr>
+            <tr><th scope="row">여백<span class="hanja">餘白</span></th><td>비움의 미학</td><td>회전체 · 균열 성장</td></tr>
+            <tr><th scope="row">조각보</th><td>우연의 기하학</td><td>BSP 분할 · Verlet 로프</td></tr>
+            <tr><th scope="row">풍류<span class="hanja">風流</span></th><td>소리의 형상</td><td>온셋 감지 · 마르코프 가락</td></tr>
+            <tr><th scope="row">민화<span class="hanja">民畫</span></th><td>다시 그린 옛 그림</td><td>반응확산 · Boids · WebGL 셰이더</td></tr>
+            <tr><th scope="row">세시<span class="hanja">歲時</span></th><td>시간을 새기다</td><td>절기 · 음력 위상 계산</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>호랑이 무늬는 Gray-Scott <strong>반응확산</strong>으로, 학 무리는 <strong>Boids</strong>로, 매듭은
+        <strong>Verlet</strong> 물리로, 산수의 안개는 <strong>Perlin</strong> 노이즈로 자라났습니다.
+        무늬를 그리는 대신, 무늬가 스스로 생겨나는 규칙을 심었습니다.</p>
+    </section>
+
+    <footer class="mk__back">
+      <a href="./index.html">← 전시로 돌아가기</a>
+    </footer>
+  </main>
+</body>
+</html>
