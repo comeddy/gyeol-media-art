@@ -10,7 +10,7 @@
 
   /* 파생 톤 */
   --paper-dim:color-mix(in srgb,var(--paper) 62%,transparent);
-  --paper-faint:color-mix(in srgb,var(--paper) 34%,transparent);
+  --paper-faint:color-mix(in srgb,var(--paper) 48%,transparent);
   --hairline:color-mix(in srgb,var(--paper) 16%,transparent);
   --hairline-hi:color-mix(in srgb,var(--gold) 66%,transparent);
   --veil:color-mix(in srgb,var(--ink) 72%,transparent);
@@ -247,6 +247,12 @@ body[data-view="viewer"]{ overflow:hidden; }
   transition:color .3s var(--ease), letter-spacing .4s var(--ease);
 }
 .foot a:hover { color:var(--gold); letter-spacing:.13em; }
+.foot__copy, .mk__back .foot__copy {
+  font-family:var(--mono);
+  font-size:.7rem; letter-spacing:.08em;
+  color:var(--paper-faint);
+  margin-top:1rem;
+}
 
 /* ═══════════════════════ 뷰어 (전체화면) ═══════════════════════════ */
 .viewer { position:fixed; inset:0; z-index:40; background:var(--black); }
