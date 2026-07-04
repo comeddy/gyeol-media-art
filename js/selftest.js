@@ -5,7 +5,7 @@
 // 검증 항목 (작품별):
 //   ok         : 예외 0 · 로드/init 오류 0 · 렌더가 균일하지 않음(!uniform)
 //   errors     : mountWork 중 수집된 __GYEOL__.currentErrors + 동기 frame 예외
-//   uniform    : #stage 캔버스를 64×64로 다운샘플 → 96바이트 간격 샘플이 모두 같은 값이면 true
+//   uniform    : #stage 캔버스를 64×64로 다운샘플 → 전 픽셀 R값이 모두 같으면 true
 //   msPerFrame : 동기 60프레임 총시간 / 60 (< 16 이면 60fps 여유)
 //
 // 결과: window.__SMOKE__ = { done, results:[{id, ok, errors, uniform, msPerFrame}] }
@@ -17,7 +17,6 @@ const GY = window.__GYEOL__;
 const FRAMES = 60;
 const DT = 1 / 60;          // 고정 타임스텝 (프레임 독립 검증)
 const SAMPLE_SIZE = 64;     // 다운샘플 해상도
-const SAMPLE_STRIDE = 96;   // 픽셀 데이터 샘플 간격(바이트)
 
 const SMOKE = { done: false, results: [] };
 window.__SMOKE__ = SMOKE;
@@ -57,8 +56,9 @@ function renderOverlay(total, currentId) {
 }
 
 // ── 픽셀 균일성 검사 ────────────────────────────────────────────────────
-// #stage 캔버스를 64×64 2d 오프스크린에 축소 → getImageData → 96바이트 간격 샘플.
+// #stage 캔버스를 64×64 2d 오프스크린에 축소 → getImageData → 전 픽셀(4096) R값 검사.
 // 고유값이 1개 이하면 uniform(=아무것도 안 그렸거나 단색) 으로 본다.
+// (stride 샘플링은 작품의 열 주기와 공진해 오판할 수 있어 전수 검사로 바꿨다.)
 function isUniform() {
   const canvas = document.querySelector('#stage canvas');
   if (!canvas || !canvas.width || !canvas.height) return true;
@@ -69,7 +69,7 @@ function isUniform() {
     octx.drawImage(canvas, 0, 0, SAMPLE_SIZE, SAMPLE_SIZE);
     const data = octx.getImageData(0, 0, SAMPLE_SIZE, SAMPLE_SIZE).data;
     const seen = new Set();
-    for (let i = 0; i < data.length; i += SAMPLE_STRIDE) seen.add(data[i]);
+    for (let i = 0; i < data.length; i += 4) seen.add(data[i]); // 전 픽셀 R값
     return seen.size <= 1;
   } catch {
     return true; // 읽기 실패(taint 등)는 검증 불가 → 보수적으로 uniform 취급
