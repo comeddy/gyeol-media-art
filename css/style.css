@@ -74,6 +74,8 @@ body[data-view="viewer"]{ overflow:hidden; }
 .topbar > * { pointer-events:auto; }
 
 .brand {
+  display:inline-flex; align-items:center;
+  min-height:44px;
   font-family:var(--mono);
   font-size:.9rem; font-weight:700;
   letter-spacing:.14em;
