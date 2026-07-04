@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="description" content="결 · GYEOL — 한국적 미감을 코드로 다시 빚은 8관 32작품 인터랙티브 미디어 아트 전시." />
+  <title>결 · GYEOL — 한국적 미감의 제너러티브 전시</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="./css/style.css" />
+  <script type="importmap">
+  { "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.161.0/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.161.0/examples/jsm/" } }
+  </script>
+</head>
+<body data-view="atrium">
+  <div class="grain" aria-hidden="true"></div>
+  <header class="topbar">
+    <button class="brand" data-action="home" aria-label="아트리움으로">결 · GYEOL</button>
+    <button class="sound-toggle" data-action="sound" aria-pressed="false" aria-label="사운드 켜기/끄기">∿</button>
+  </header>
+  <main id="atrium" class="atrium">
+    <section class="hero">
+      <p class="hero__eyebrow">GENERATIVE KOREAN AESTHETICS</p>
+      <h1 class="hero__title">결</h1>
+      <p class="hero__lead">물결, 나뭇결, 숨결, 비단결 — 자연이 스스로 새기는 무늬를 코드로 다시 빚었습니다.
+        여덟 개의 전시관, 서른두 개의 작품. 만지고, 불고, 기울이고, 손짓해 보세요.</p>
+      <p class="hero__meta">32 WORKS · 8 WINGS · INTERACTIVE</p>
+    </section>
+    <section id="wings" class="wings" aria-label="전시관 목록"><!-- main.js가 주입 --></section>
+    <footer class="foot"><a href="./making-of.html">이 전시는 어떻게 만들어졌나 →</a></footer>
+  </main>
+  <section id="viewer" class="viewer" hidden>
+    <div id="stage" class="stage"></div>
+    <div class="viewer__hud">
+      <button data-action="close" aria-label="닫기">✕</button>
+      <button data-action="prev" aria-label="이전 작품">‹</button>
+      <button data-action="next" aria-label="다음 작품">›</button>
+      <button data-action="info" aria-label="작품 정보" aria-expanded="false">ⓘ</button>
+    </div>
+    <aside id="panel" class="viewer__panel" hidden>
+      <h2 id="viewer-title"></h2>
+      <p id="viewer-desc"></p>
+      <p id="viewer-note" class="note"></p>
+    </aside>
+    <p id="hint" class="viewer__hint" hidden></p>
+  </section>
+  <script type="module" src="./js/main.js"></script>
+</body>
+</html>

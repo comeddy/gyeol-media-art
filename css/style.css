@@ -1,0 +1,369 @@
+/* ═══════════════════════════════════════════════════════════════════
+   결 · GYEOL — 한국적 미감의 제너러티브 미디어 아트 전시
+   전역 스타일: 먹빛 배경 위 한지색 타이포, 갤러리다운 여백과 트랜지션
+   ═══════════════════════════════════════════════════════════════════ */
+
+:root {
+  /* 팔레트 — 먹(ink)·한지(paper)·단청(오방색) */
+  --ink:#0E0C0A; --paper:#EDE6D6; --red:#C23B22; --blue:#2C5F93;
+  --gold:#E3A81C; --black:#1A1611;
+
+  /* 파생 톤 */
+  --paper-dim:color-mix(in srgb,var(--paper) 62%,transparent);
+  --paper-faint:color-mix(in srgb,var(--paper) 34%,transparent);
+  --hairline:color-mix(in srgb,var(--paper) 16%,transparent);
+  --hairline-hi:color-mix(in srgb,var(--gold) 66%,transparent);
+  --veil:color-mix(in srgb,var(--ink) 72%,transparent);
+
+  /* 타이포 */
+  --serif:'Gowun Batang',serif; --mono:'Space Mono',monospace;
+
+  /* 리듬 */
+  --pad:clamp(1.25rem,4vw,3rem);
+  --ease:cubic-bezier(.22,.61,.36,1);
+}
+
+* { margin:0; box-sizing:border-box; }
+html,body { height:100%; }
+
+body {
+  background:var(--ink);
+  color:var(--paper);
+  font-family:var(--serif);
+  font-weight:400;
+  line-height:1.7;
+  overflow-x:hidden;
+  -webkit-font-smoothing:antialiased;
+  text-rendering:optimizeLegibility;
+}
+
+::selection { background:var(--gold); color:var(--ink); }
+
+:where(a){ color:inherit; text-decoration:none; }
+
+:where(button){
+  font:inherit; color:inherit; background:none;
+  border:0; cursor:pointer; -webkit-tap-highlight-color:transparent;
+}
+
+:where(button,a):focus-visible{
+  outline:2px solid var(--gold);
+  outline-offset:3px;
+  border-radius:2px;
+}
+
+/* ── 한지 질감: feTurbulence 노이즈 오버레이 ───────────────────────── */
+.grain {
+  position:fixed; inset:0; pointer-events:none; opacity:.06; z-index:50;
+  mix-blend-mode:overlay;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.82' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* ── 뷰 상태 전환 (아트리움 ↔ 뷰어) ──────────────────────────────── */
+body[data-view="viewer"] #atrium { display:none; }
+body[data-view="atrium"] #viewer { display:none; }
+body[data-view="viewer"]{ overflow:hidden; }
+
+/* ═══════════════════════ 상단 바 ═══════════════════════════════════ */
+.topbar {
+  position:fixed; inset:0 0 auto 0; z-index:60;
+  display:flex; align-items:center; justify-content:space-between;
+  padding:1.15rem var(--pad);
+  pointer-events:none;
+}
+.topbar > * { pointer-events:auto; }
+
+.brand {
+  font-family:var(--mono);
+  font-size:.9rem; font-weight:700;
+  letter-spacing:.14em;
+  color:var(--paper);
+  opacity:.82;
+  transition:opacity .3s var(--ease), letter-spacing .4s var(--ease);
+}
+.brand:hover { opacity:1; letter-spacing:.2em; }
+
+.sound-toggle {
+  width:2.5rem; height:2.5rem;
+  display:grid; place-items:center;
+  font-size:1.3rem; line-height:1;
+  color:var(--paper);
+  border:1px solid var(--hairline);
+  border-radius:50%;
+  opacity:.7;
+  transition:opacity .3s var(--ease), border-color .3s var(--ease),
+             color .3s var(--ease), transform .4s var(--ease);
+}
+.sound-toggle:hover { opacity:1; border-color:var(--hairline-hi); color:var(--gold); }
+.sound-toggle[aria-pressed="true"]{
+  opacity:1; color:var(--gold); border-color:var(--hairline-hi);
+  box-shadow:0 0 0 1px color-mix(in srgb,var(--gold) 30%,transparent) inset;
+}
+
+/* ═══════════════════════ 아트리움 ═════════════════════════════════ */
+.atrium { min-height:100%; }
+
+/* ── 히어로 ──────────────────────────────────────────────────────── */
+.hero {
+  display:flex; flex-direction:column; align-items:center;
+  text-align:center;
+  padding:clamp(7rem,16vh,11rem) var(--pad) clamp(3rem,8vh,5rem);
+}
+
+.hero__eyebrow {
+  font-family:var(--mono);
+  font-size:.72rem; letter-spacing:.42em;
+  color:var(--gold);
+  opacity:.9;
+  padding-left:.42em; /* 자간 시각 보정 */
+  margin-bottom:1.6rem;
+}
+
+.hero__title {
+  font-size:clamp(6rem,24vw,15rem);
+  font-weight:700;
+  line-height:.9;
+  letter-spacing:.02em;
+  color:var(--paper);
+  text-shadow:0 0 60px color-mix(in srgb,var(--gold) 18%,transparent);
+  margin-bottom:1.8rem;
+}
+
+.hero__lead {
+  max-width:38ch;
+  font-size:clamp(1rem,1.35vw,1.18rem);
+  color:var(--paper-dim);
+  text-wrap:balance;
+  margin-bottom:2rem;
+}
+
+.hero__meta {
+  font-family:var(--mono);
+  font-size:.7rem; letter-spacing:.34em;
+  color:var(--paper-faint);
+  padding-left:.34em;
+}
+
+/* ═══════════════════════ 전시관 그리드 ═════════════════════════════ */
+.wings {
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(280px,1fr));
+  gap:1rem;
+  padding:2rem var(--pad) clamp(4rem,10vh,6rem);
+  max-width:1400px;
+  margin-inline:auto;
+}
+
+.wing-card {
+  position:relative;
+  display:flex; flex-direction:column; gap:.85rem;
+  min-height:14rem;
+  padding:1.6rem 1.5rem 1.5rem;
+  border:1px solid var(--hairline);
+  background:linear-gradient(160deg,
+    color-mix(in srgb,var(--paper) 4%,transparent),
+    transparent 62%);
+  color:inherit; text-align:left;
+  overflow:hidden;
+  transition:border-color .4s var(--ease), transform .4s var(--ease),
+             background .4s var(--ease);
+}
+/* 좌상단 단청 악센트 라인 — hover 시 자라남 */
+.wing-card::before {
+  content:""; position:absolute; top:0; left:0;
+  width:2px; height:0;
+  background:linear-gradient(var(--gold),var(--red));
+  transition:height .45s var(--ease);
+}
+.wing-card:hover,
+.wing-card:focus-visible {
+  border-color:var(--hairline-hi);
+  transform:translateY(-4px);
+  background:linear-gradient(160deg,
+    color-mix(in srgb,var(--paper) 8%,transparent),
+    transparent 66%);
+}
+.wing-card:hover::before,
+.wing-card:focus-visible::before { height:100%; }
+
+/* 관 번호 (main.js 주입 마크업 대비 방어적 스타일) */
+.wing-card__index,
+.wing-card [data-index] {
+  font-family:var(--mono);
+  font-size:.72rem; letter-spacing:.28em;
+  color:var(--gold); opacity:.85;
+}
+
+/* 관 이름 — 한글 + 한자 */
+.wing-card h2,
+.wing-card__name {
+  font-size:1.7rem; font-weight:700; line-height:1.25;
+  letter-spacing:.01em;
+  color:var(--paper);
+}
+.wing-card h2 .hanja,
+.wing-card__hanja {
+  font-weight:400;
+  color:var(--paper-dim);
+  margin-left:.35em;
+  font-size:.8em;
+}
+
+/* 관 테마 설명 */
+.wing-card p,
+.wing-card__theme {
+  font-size:.95rem;
+  color:var(--paper-dim);
+}
+
+/* 작품 칩 목록 */
+.wing-card__works {
+  display:flex; flex-wrap:wrap; gap:.4rem .6rem;
+  margin-top:auto; padding-top:.4rem;
+  list-style:none;
+}
+.work-chip {
+  font-family:var(--mono);
+  font-size:.75rem; opacity:.7;
+  transition:opacity .3s var(--ease), color .3s var(--ease);
+}
+.work-chip::before { content:"·\00a0"; color:var(--gold); }
+.work-chip:first-child::before { content:none; }
+.wing-card:hover .work-chip { opacity:.95; }
+
+/* ═══════════════════════ 푸터 ═════════════════════════════════════ */
+.foot {
+  text-align:center;
+  padding:2rem var(--pad) 4rem;
+  border-top:1px solid var(--hairline);
+  margin:0 var(--pad);
+}
+.foot a {
+  font-family:var(--mono);
+  font-size:.82rem; letter-spacing:.08em;
+  color:var(--paper-dim);
+  transition:color .3s var(--ease), letter-spacing .4s var(--ease);
+}
+.foot a:hover { color:var(--gold); letter-spacing:.13em; }
+
+/* ═══════════════════════ 뷰어 (전체화면) ═══════════════════════════ */
+.viewer { position:fixed; inset:0; z-index:40; background:var(--black); }
+
+.stage, .stage canvas {
+  position:absolute; inset:0;
+  width:100%; height:100%;
+  display:block;
+}
+
+/* ── HUD: 화면 모서리 배치, 반투명, hover 시 선명 ─────────────────── */
+.viewer__hud { position:absolute; inset:0; pointer-events:none; z-index:2; }
+
+.viewer__hud button {
+  position:absolute;
+  display:grid; place-items:center;
+  width:3rem; height:3rem;
+  font-size:1.35rem; line-height:1;
+  color:var(--paper);
+  background:color-mix(in srgb,var(--ink) 42%,transparent);
+  border:1px solid var(--hairline);
+  border-radius:50%;
+  opacity:.42;
+  backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px);
+  pointer-events:auto;
+  transition:opacity .3s var(--ease), border-color .3s var(--ease),
+             background .3s var(--ease), transform .3s var(--ease);
+}
+.viewer__hud button:hover,
+.viewer__hud button:focus-visible {
+  opacity:1; border-color:var(--hairline-hi);
+  background:color-mix(in srgb,var(--ink) 66%,transparent);
+}
+
+/* close·sound가 우상단에서 나란히: [✕]  [∿] */
+.viewer__hud [data-action="close"]{ top:1.05rem; right:4.6rem; }
+.viewer__hud [data-action="prev"] { top:50%; left:1.25rem; transform:translateY(-50%); }
+.viewer__hud [data-action="next"] { top:50%; right:1.25rem; transform:translateY(-50%); }
+.viewer__hud [data-action="prev"]:hover,
+.viewer__hud [data-action="next"]:hover { transform:translateY(-50%) scale(1.06); }
+.viewer__hud [data-action="info"] { bottom:1.5rem; right:1.5rem; font-size:1.2rem; }
+.viewer__hud [data-action="info"][aria-expanded="true"]{
+  opacity:1; color:var(--gold); border-color:var(--hairline-hi);
+}
+
+/* ── 정보 패널: 우측 하단 유리모피즘 카드 ────────────────────────── */
+.viewer__panel {
+  position:absolute; right:1.5rem; bottom:5.4rem; z-index:3;
+  width:min(30rem,calc(100vw - 3rem));
+  padding:1.6rem 1.7rem;
+  background:color-mix(in srgb,var(--ink) 58%,transparent);
+  border:1px solid var(--hairline);
+  border-radius:14px;
+  backdrop-filter:blur(16px) saturate(1.3);
+  -webkit-backdrop-filter:blur(16px) saturate(1.3);
+  box-shadow:0 18px 50px color-mix(in srgb,#000 55%,transparent);
+  transition:opacity .38s var(--ease), transform .38s var(--ease);
+}
+/* [hidden] 를 애니메이션 가능한 상태로 재정의 (main.js가 토글) */
+.viewer__panel[hidden]{
+  display:block;
+  opacity:0; transform:translateY(14px) scale(.98);
+  pointer-events:none;
+}
+.viewer__panel h2 {
+  font-size:1.5rem; font-weight:700; line-height:1.3;
+  margin-bottom:.6rem; color:var(--paper);
+}
+.viewer__panel p { font-size:.95rem; color:var(--paper-dim); }
+.viewer__panel .note {
+  margin-top:.9rem; padding-top:.9rem;
+  border-top:1px solid var(--hairline);
+  font-family:var(--mono);
+  font-size:.78rem; line-height:1.65;
+  color:var(--paper-faint);
+}
+
+/* ── 힌트 바: 하단 중앙 ──────────────────────────────────────────── */
+.viewer__hint {
+  position:absolute; left:50%; bottom:1.6rem; z-index:3;
+  transform:translateX(-50%);
+  max-width:min(90vw,32rem);
+  padding:.6rem 1.15rem;
+  text-align:center;
+  font-family:var(--mono);
+  font-size:.76rem; letter-spacing:.04em;
+  color:var(--paper-dim);
+  background:color-mix(in srgb,var(--ink) 52%,transparent);
+  border:1px solid var(--hairline);
+  border-radius:999px;
+  backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px);
+  transition:opacity .4s var(--ease), transform .4s var(--ease);
+}
+.viewer__hint[hidden]{
+  display:block;
+  opacity:0; transform:translateX(-50%) translateY(8px);
+  pointer-events:none;
+}
+
+/* ═══════════════════════ 반응형 ═══════════════════════════════════ */
+@media (max-width:900px){
+  .wings { grid-template-columns:repeat(auto-fill,minmax(240px,1fr)); }
+  .viewer__panel { right:1rem; left:1rem; width:auto; bottom:5rem; }
+}
+
+@media (max-width:600px){
+  .hero { padding-top:8rem; }
+  .hero__title { font-size:4rem; }
+  .hero__lead { font-size:1rem; }
+  .wings { padding:1rem; grid-template-columns:1fr; }
+  .wing-card { min-height:12rem; }
+  .viewer__hud button { width:2.7rem; height:2.7rem; font-size:1.2rem; }
+  .viewer__hud [data-action="close"]{ right:4.2rem; }
+  .foot { margin:0; }
+}
+
+/* ── 접근성: 모션 최소화 선호 ────────────────────────────────────── */
+@media (prefers-reduced-motion:reduce){
+  * { transition-duration:.01ms !important; animation-duration:.01ms !important; }
+  .wing-card:hover,
+  .wing-card:focus-visible { transform:none; }
+}
