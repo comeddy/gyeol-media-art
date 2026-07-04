@@ -80,9 +80,10 @@ function route() {
     return;
   }
   if (current || !viewerEl.hidden) leaveViewer();
-  audio.setAmbient(null);
-  if (r.view === 'wing') renderWingEntrance(r.no);
-  else renderAtrium();
+  // 관 입장(입구·뷰어) 시 앰비언트를 흘리고, 아트리움에서만 정지 (플랜: 관 입장 시 setAmbient(wingNo)).
+  // muted 기본 true라 사용자가 사운드를 켜기 전엔 무음 — 켜면 관 어디서든 해당 관 앰비언트가 흐른다.
+  if (r.view === 'wing') { audio.setAmbient(r.no); renderWingEntrance(r.no); }
+  else { audio.setAmbient(null); renderAtrium(); }
 }
 
 // ── 아트리움: 관 카드 8개 주입 ──────────────────────────────────────────
@@ -154,8 +155,8 @@ async function mountWork(id) {
   const work = findWork(id);
   if (!work) return Promise.reject(new Error('unknown work: ' + id));
   const seq = ++mountSeq;
-  GY.currentErrors.length = 0;          // 계약: mountWork마다 에러 리셋
-  unmountWork();                        // 기존 작품 정리
+  unmountWork();                        // 기존 작품 정리 (이 안의 dispose 예외는 이전 작품 몫)
+  GY.currentErrors.length = 0;          // 계약: unmount 완료 후 리셋 → 새 작품에만 귀속
   if (seq !== mountSeq) return work;
 
   showViewerChrome(work);
@@ -165,8 +166,7 @@ async function mountWork(id) {
 
   const canvas = document.createElement('canvas');
   stageEl.append(canvas);
-  bindPointer(canvas);
-  setupHint(work);
+  setupHint(work);                      // bindPointer는 init 성공 후 (실패/레이스 경로 리스너 누수 방지)
 
   let mod;
   try {
@@ -181,15 +181,17 @@ async function mountWork(id) {
 
   const inst = mod.default;
   const { w, h: hh } = stageSize();
+  const dpr = Math.min(devicePixelRatio || 1, 2);
   current = { work, canvas, inst };
   try {
-    inst.init({ canvas, width: w, height: hh, audio, sensors, hands });
+    inst.init({ canvas, audio, sensors, hands, width: w, height: hh, dpr });
   } catch (err) {
     pushErr('init ' + work.id + ': ' + (err && err.message || err));
     showErrorCard(work);
     current = null;
     return work;
   }
+  bindPointer(canvas);   // init 성공 후에만 포인터/윈도우 리스너 등록
   startLoop();
   return work;
 }
