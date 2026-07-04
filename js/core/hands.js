@@ -32,6 +32,7 @@ class GyeolHands {
     this._raf = 0;           // requestAnimationFrame id
     this._lastVideoTime = -1;// 같은 프레임 중복 검출 방지용
     this._latest = [];       // 최신 검출 결과(get()이 반환) — 호출측 프레임과 분리
+    this._gen = 0;           // 세대 토큰 — 로딩 중 stop() 취소를 감지(카메라 스트림 누수 방지)
   }
 
   // 카메라 권한 + 모델/wasm 로딩. 성공 true, 실패 false(throw 금지).
@@ -50,7 +51,12 @@ class GyeolHands {
   get() { return this._latest; }
 
   // 지연 초기화 본체. 어느 단계에서 실패해도 부분 자원을 정리하고 false를 돌려준다.
+  // 자원은 로컬 변수에만 획득하고, 각 await 뒤에 세대(gen) 토큰을 확인한다.
+  //   로딩 중 stop()이 불리면(gen 불일치) 지금까지 딴 자원을 정리하고 false를 반환한다
+  //   → 스트림·video·landmarker 누수와 stop 이후 RAF 루프 시작을 원천 차단.
+  // 인스턴스 필드(this._*) 대입과 RAF 시작은 마지막 gen 확인을 통과한 뒤에만 한다.
   async _start() {
+    const gen = ++this._gen;
     const nav = typeof navigator !== 'undefined' ? navigator : null;
     const md = nav && nav.mediaDevices;
     // 미지원 환경(Node·비보안 컨텍스트 등)은 조용히 미가용 처리.
@@ -58,41 +64,65 @@ class GyeolHands {
       this._available = false;
       return false;
     }
+
+    let vision = null;
+    let landmarker = null;
+    let stream = null;
+    let video = null;
+    // 이번 _start가 딴 로컬 자원만 정리(this._* 필드는 건드리지 않는다).
+    const stale = () => {
+      if (gen !== this._gen) { this._dispose(stream, video, landmarker); return true; }
+      return false;
+    };
+
     try {
       // CDN 동적 import — 여기서 처음으로 무거운 라이브러리를 내려받는다.
-      const vision = await import(CDN);
-      const { FilesetResolver, HandLandmarker } = vision;
-      this._vision = await FilesetResolver.forVisionTasks(WASM_PATH);
-      this._landmarker = await this._createLandmarker(HandLandmarker);
+      const mod = await import(CDN);
+      if (stale()) return false;
+      const { FilesetResolver, HandLandmarker } = mod;
+      vision = await FilesetResolver.forVisionTasks(WASM_PATH);
+      if (stale()) return false;
+      landmarker = await this._createLandmarker(HandLandmarker, vision);
+      if (stale()) return false;
 
       // 카메라 스트림 → 숨김 video.
-      this._stream = await md.getUserMedia({ video: { width: 640 } });
-      this._video = this._makeVideo(this._stream);
-      await this._waitVideoReady(this._video);
-      try { await this._video.play(); } catch { /* 무음 재생 정책상 대개 성공, 실패해도 트랙 프레임은 흐른다 */ }
+      stream = await md.getUserMedia({ video: { width: 640 } });
+      if (stale()) return false;
+      video = this._makeVideo(stream);
+      await this._waitVideoReady(video);
+      if (stale()) return false;
+      try { await video.play(); } catch { /* 무음 재생 정책상 대개 성공, 실패해도 트랙 프레임은 흐른다 */ }
+      if (stale()) return false;
 
+      // 여기까지 오면 취소되지 않았다 — 인스턴스에 커밋하고 RAF 시작.
+      // (이 지점 이후로 await가 없어 stop()이 끼어들 수 없다.)
+      this._vision = vision;
+      this._landmarker = landmarker;
+      this._stream = stream;
+      this._video = video;
       this._available = true;
       this._loop();
       return true;
     } catch {
-      // 어느 단계에서든 실패 — 부분 자원 정리 후 미가용.
-      this._teardown();
-      this._available = false;
+      // 어느 단계에서든 실패 — 이번 _start가 딴 로컬 자원을 정리 후 미가용.
+      this._dispose(stream, video, landmarker);
+      // 도중에 stop()이 불려 gen이 바뀌었다면 상태 플래그는 stop()이 이미 정리했다.
+      if (gen === this._gen) this._available = false;
       return false;
     }
   }
 
   // GPU delegate 우선, 실패 시 CPU로 재시도.
-  async _createLandmarker(HandLandmarker) {
+  async _createLandmarker(HandLandmarker, vision) {
     const opts = (delegate) => ({
       baseOptions: { modelAssetPath: MODEL_PATH, delegate },
       numHands: 2,
       runningMode: 'VIDEO',
     });
     try {
-      return await HandLandmarker.createFromOptions(this._vision, opts('GPU'));
+      return await HandLandmarker.createFromOptions(vision, opts('GPU'));
     } catch {
-      return await HandLandmarker.createFromOptions(this._vision, opts('CPU'));
+      return await HandLandmarker.createFromOptions(vision, opts('CPU'));
     }
   }
 
@@ -158,8 +188,10 @@ class GyeolHands {
   }
 
   // RAF 취소 + 스트림 트랙 stop + video 제거 + landmarker.close(). latest 초기화.
+  // 세대 토큰을 올려, 진행 중이던 _start(로딩)가 커밋 전에 스스로 취소·정리하게 한다.
   // 이후 request() 재호출로 다시 켤 수 있다.
   stop() {
+    this._gen++;
     this._teardown();
     this._available = false;
     this._promise = null;
@@ -167,27 +199,33 @@ class GyeolHands {
     this._latest = [];
   }
 
-  // 자원 해제(성공/실패 공통). 상태 플래그는 호출측(stop/_start)이 정리한다.
+  // 인스턴스에 커밋된 자원 해제(성공 경로 stop용). 상태 플래그는 호출측이 정리한다.
   _teardown() {
     if (this._raf) {
       if (typeof cancelAnimationFrame === 'function') cancelAnimationFrame(this._raf);
       this._raf = 0;
     }
-    if (this._stream) {
-      for (const t of this._stream.getTracks()) { try { t.stop(); } catch { /* 무시 */ } }
-      this._stream = null;
-    }
-    if (this._video) {
-      try { this._video.pause(); } catch { /* 무시 */ }
-      this._video.srcObject = null;
-      try { this._video.remove(); } catch { /* 무시 */ }
-      this._video = null;
-    }
-    if (this._landmarker) {
-      try { this._landmarker.close(); } catch { /* 무시 */ }
-      this._landmarker = null;
-    }
+    this._dispose(this._stream, this._video, this._landmarker);
+    this._stream = null;
+    this._video = null;
+    this._landmarker = null;
     this._vision = null;
+  }
+
+  // 순수 자원 해제 헬퍼 — 인자로 받은 것만 정리(this.* 필드 비의존).
+  // _start의 취소 경로(로컬 자원)와 _teardown(커밋된 자원) 양쪽이 공유한다.
+  _dispose(stream, video, landmarker) {
+    if (stream) {
+      for (const t of stream.getTracks()) { try { t.stop(); } catch { /* 무시 */ } }
+    }
+    if (video) {
+      try { video.pause(); } catch { /* 무시 */ }
+      video.srcObject = null;
+      try { video.remove(); } catch { /* 무시 */ }
+    }
+    if (landmarker) {
+      try { landmarker.close(); } catch { /* 무시 */ }
+    }
   }
 }
 
