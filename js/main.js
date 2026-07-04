@@ -26,7 +26,7 @@ const soundBtn = $('[data-action="sound"]');
 const NEEDS_LABEL = { mic: '마이크', hands: '손 인식', gyro: '기울임', webgl: 'WebGL' };
 const NEEDS_REQ = ['mic', 'hands', 'gyro']; // 권한 요청이 필요한 needs (webgl 제외)
 const DT_MAX = 0.05;                         // dt 상한 (탭 백그라운드 복귀 스파이크 방지)
-const HINT_FADE_MS = 3000;
+const HOW_FADE_MS = 4500;  // 조작 안내가 첫 조작 후 화면에 머무는 시간
 
 // ── 상태 ──────────────────────────────────────────────────────────────
 let current = null;      // { work, canvas, ctx2d } — 마운트된 작품 (없으면 null)
@@ -277,22 +277,38 @@ function unbindPointer(canvas) {
   ptr = null;
 }
 
-// ── 권한 힌트 (#hint) + 첫 포인터다운 request() ──────────────────────────
-let pendingNeeds = null;
+// ── 조작 안내 + 권한 힌트 (#hint) + 첫 포인터다운 request() ──────────────
+// 모든 작품이 마운트 직후 조작 방법(work.how)을 화면에서 안내한다.
+//  - 권한 불필요 작품: how 상시 표시 → 첫 조작 후 잠시 뒤 페이드.
+//  - 권한 필요 작품: 탭 유도 문구 → 탭 후 준비되면 how와 함께 페이드.
+//    권한 실패 시 how는 센서 조작 설명이라 오해를 부르므로 폴백 문구만.
+let pendingNeeds = null, pendingHow = '';
 function setupHint(work) {
   clearHint();
   const req = (work.needs || []).filter((n) => NEEDS_REQ.includes(n));
   pendingNeeds = req.length ? req : null;
-  if (!pendingNeeds) return;
+  pendingHow = work.how || '';
+  if (!pendingNeeds) {
+    if (pendingHow) showHint(pendingHow, 0);          // 첫 조작까지 유지
+    return;
+  }
   const names = req.map((n) => NEEDS_LABEL[n]).join('·');
-  showHint(`이 작품은 ${names}로 반응합니다 — 화면을 탭하면 시작됩니다`, false);
+  showHint(`이 작품은 ${names}로 반응합니다 — 화면을 탭하면 시작됩니다`, 0);
 }
 async function onFirstPointer() {
-  if (!pendingNeeds) return;
+  if (!pendingNeeds) {
+    if (!pendingHow) return;
+    const how = pendingHow; pendingHow = '';
+    showHint(how, HOW_FADE_MS);                        // 조작 시작 → 읽을 시간 뒤 페이드
+    return;
+  }
   const needs = pendingNeeds; pendingNeeds = null;
   const names = needs.map((n) => NEEDS_LABEL[n]).join('·');
   const results = await Promise.all(needs.map(requestNeed));
-  showHint(results.every(Boolean) ? `${names} 준비됨` : `${names} 없이도 감상할 수 있습니다`, true);
+  const how = pendingHow; pendingHow = '';
+  showHint(results.every(Boolean)
+    ? (how ? `${names} 준비됨 — ${how}` : `${names} 준비됨`)
+    : `${names} 없이도 감상할 수 있습니다 — 터치/드래그로 조작해 보세요`, HOW_FADE_MS);
 }
 function requestNeed(n) {
   try {
@@ -302,12 +318,12 @@ function requestNeed(n) {
   } catch (err) { pushErr('request ' + n + ': ' + (err && err.message || err)); }
   return Promise.resolve(false);
 }
-function showHint(text, autoFade) {
+function showHint(text, fadeMs) {
   hintEl.textContent = text;
   hintEl.hidden = false;
   hintEl.setAttribute('aria-hidden', 'false');
   if (hintTimer) { clearTimeout(hintTimer); hintTimer = 0; }
-  if (autoFade) hintTimer = setTimeout(clearHint, HINT_FADE_MS);
+  if (fadeMs) hintTimer = setTimeout(clearHint, fadeMs);
 }
 function clearHint() {
   if (hintTimer) { clearTimeout(hintTimer); hintTimer = 0; }

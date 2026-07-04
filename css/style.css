@@ -334,6 +334,7 @@ body[data-view="viewer"]{ overflow:hidden; }
 /* ── 힌트 바: 하단 중앙 ──────────────────────────────────────────── */
 .viewer__hint {
   position:absolute; left:50%; bottom:1.6rem; z-index:3;
+  pointer-events:none;   /* 안내 위를 탭해도 캔버스가 받도록 — 순수 정보 요소 */
   transform:translateX(-50%);
   max-width:min(90vw,32rem);
   padding:.6rem 1.15rem;
