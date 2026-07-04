@@ -193,6 +193,7 @@ async function mountWork(id) {
   }
   bindPointer(canvas);   // init 성공 후에만 포인터/윈도우 리스너 등록
   startLoop();
+  prefetchWing(work.wing, work.id); // 같은 관 나머지 작품 idle 프리페치
   return work;
 }
 
@@ -340,9 +341,23 @@ function showErrorCard(work) {
   stageEl.append(box);
 }
 
-// 관 프리페치(같은 관 나머지 작품 idle import)는 의도적으로 생략한다.
-// 정적 서버가 디렉터리 리스팅을 막고(404) 아직 없는 형제 모듈을 network로 탐지하면
-// 콘솔 404를 남기므로, 32작품이 모두 존재하는 통합 단계에서 재도입한다.
+// ── 관 단위 프리페치 — mount 성공 후 idle 시점에 같은 관 나머지 작품 모듈을 import ──
+// data.js WORKS의 모든 작품 파일이 존재하므로 안전하다. 실패는 조용히 무시(콘솔 노이즈 금지).
+// mountSeq·selftest에 영향 없음: current/RAF/DOM을 건드리지 않고 모듈 캐시만 데운다.
+const prefetched = new Set();
+function prefetchWing(wingNo, exceptId) {
+  const run = () => {
+    for (const w of wingWorks(wingNo)) {
+      if (w.id === exceptId) continue;
+      const path = `./works/w${w.wing}-${w.id}.js`;
+      if (prefetched.has(path)) continue;
+      prefetched.add(path);
+      import(path).catch(() => { prefetched.delete(path); /* 실패는 무시, 재시도 여지 */ });
+    }
+  };
+  if (typeof requestIdleCallback === 'function') requestIdleCallback(run, { timeout: 3000 });
+  else setTimeout(run, 1000);
+}
 
 // ══ 이벤트 바인딩 · 초기 진입 ══════════════════════════════════════════
 let viewerWork = null;   // 뷰어에 걸린 작품 (로드 실패로 current=null이어도 ‹ ›·닫기 유지)
