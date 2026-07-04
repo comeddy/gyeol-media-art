@@ -62,8 +62,9 @@ class GyeolSensors {
       this._micAvailable = false;
       return false;
     }
+    let stream = null; // catch에서 트랙 정리 가능하도록 try 밖 스코프에 둔다.
     try {
-      const stream = await md.getUserMedia({ audio: true });
+      stream = await md.getUserMedia({ audio: true });
       const ctx = new AC();
       if (ctx.state === 'suspended') { try { await ctx.resume(); } catch { /* 무시 */ } }
       const analyser = ctx.createAnalyser();
@@ -77,6 +78,9 @@ class GyeolSensors {
       return true;
     } catch {
       // 권한 거부/실패 — 폴백: 미가용 상태로 남기고 false 반환(프라미스는 캐시하여 재프롬프트 방지).
+      // getUserMedia 성공 후 AudioContext/Analyser 생성이 throw했다면 스트림 트랙이 살아있어
+      // 마이크 표시등이 잔존할 수 있으므로 확실히 정리한다(프라이버시).
+      try { stream && stream.getTracks().forEach(t => t.stop()); } catch { /* 무시 */ }
       this._micAvailable = false;
       return false;
     }
