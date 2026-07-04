@@ -238,8 +238,25 @@ export default (() => {
       cv = ctx.canvas; W = ctx.width; H = ctx.height;
       const opt = { preserveDrawingBuffer: true, antialias: true };
       gl = cv.getContext('webgl', opt) || cv.getContext('experimental-webgl', opt);
-      if (gl) { mode = 'webgl'; initGL(); }
-      else { mode = '2d'; g2 = cv.getContext('2d'); }
+      if (gl) {
+        mode = 'webgl';
+        // 셰이더 compile()/link 실패(예: highp 미지원 GPU) 시 오류 카드 대신 2D 폴백.
+        try {
+          initGL();
+        } catch {
+          // 획득한 GL 자원 정리 후 getContext-null 경로와 동일하게 Canvas2D로 전환.
+          try { if (prog) gl.deleteProgram(prog); if (buf) gl.deleteBuffer(buf); } catch { /* noop */ }
+          try { const ext = gl.getExtension('WEBGL_lose_context'); if (ext) ext.loseContext(); } catch { /* noop */ }
+          gl = null; prog = null; buf = null; loc = {};
+          mode = '2d'; g2 = cv.getContext('2d');
+          // webgl에 묶인 캔버스는 getContext('2d')가 null을 반환(HTML 스펙) → 같은 DOM 위치에
+          // 새 캔버스를 끼워 2D 컨텍스트를 얻는다. 폴백을 실제로 동작시키기 위한 필수 단계.
+          if (!g2 && cv.parentNode) {
+            const fresh = document.createElement('canvas');
+            cv.replaceWith(fresh); cv = fresh; g2 = cv.getContext('2d');
+          }
+        }
+      } else { mode = '2d'; g2 = cv.getContext('2d'); }
       hour = new Date().getHours();
       setup();
       drawFrame(0);                  // init 즉시 배경/구도 렌더

@@ -52,8 +52,8 @@ export default (() => {
   }
 
   // 앞(near) 능선 y — 빗줄기 착지 판정용.
-  function groundY(x, t) {
-    const L = layer(LAYERS - 1);
+  // L(=near 겹)은 프레임당 1회 호이스트해 넘긴다(drawRain에서 300회 재생성 방지).
+  function groundY(x, t, L) {
     return L.baseY + L.amp * noise2(x * L.freq + L.seed, t * 0.02);
   }
 
@@ -92,13 +92,14 @@ export default (() => {
   function drawRain(t, dt) {
     // 살짝 기운 각도(약 11도)로 하강. 하단 능선에 닿으면 상단 재생성.
     const lean = 0.19;
+    const nearL = layer(LAYERS - 1);   // 착지 판정용 near 겹 — 프레임당 1회만 생성.
     cx.strokeStyle = 'rgba(226,228,230,0.28)';
     cx.lineWidth = 1;
     cx.beginPath();
     for (let i = 0; i < N; i++) {
       ry[i] += rspd[i] * dt;
       rx[i] += rspd[i] * dt * lean;
-      if (ry[i] > groundY(rx[i], t) || rx[i] > W + 30) {
+      if (ry[i] > groundY(rx[i], t, nearL) || rx[i] > W + 30) {
         const r = ((i * 2654435761) >>> 0) / 4294967296;
         rx[i] = ((rx[i] + r * 260) % (W + 60) + (W + 60)) % (W + 60) - 30;
         ry[i] = -rlen[i] - r * H * 0.3;
