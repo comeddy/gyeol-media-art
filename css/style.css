@@ -279,8 +279,9 @@ body[data-view="viewer"]{ overflow:hidden; }
   background:color-mix(in srgb,var(--ink) 66%,transparent);
 }
 
-/* close·sound가 우상단에서 나란히: [✕]  [∿] */
-.viewer__hud [data-action="close"]{ top:1.05rem; right:4.6rem; }
+/* close·sound가 우상단에서 나란히: [✕]  [∿]
+   sound-toggle(right:var(--pad), 2.5rem)와 겹치지 않도록 pad 기준으로 close를 왼쪽에 둔다 */
+.viewer__hud [data-action="close"]{ top:1.05rem; right:calc(var(--pad) + 3rem); }
 .viewer__hud [data-action="prev"] { top:50%; left:1.25rem; transform:translateY(-50%); }
 .viewer__hud [data-action="next"] { top:50%; right:1.25rem; transform:translateY(-50%); }
 .viewer__hud [data-action="prev"]:hover,
