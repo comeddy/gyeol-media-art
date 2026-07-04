@@ -139,7 +139,7 @@ export default (() => {
         cur.done = true; cur = null; raw = [];
       }
     },
-    resize(w, h) { W = w; H = h; setup(); render(); },
+    resize(w, h) { W = w; H = h; strokes = []; cur = null; raw = []; setup(); render(); },
     dispose() { cx = null; cv = null; hanji = null; strokes = []; cur = null; raw = []; },
   };
 })();

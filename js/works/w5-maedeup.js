@@ -41,21 +41,29 @@ export default (() => {
     return out;
   }
 
-  function mapGrid(g) {
-    const sc = Math.min(W, H) * 0.040;
-    return { x: W / 2 + (g[0] - 10) * sc, y: H * 0.5 + (g[1] - 10) * sc };
+  function polyLen(pts) {
+    let L = 0;
+    for (let i = 1; i < pts.length; i++) L += Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]);
+    return L;
   }
 
   function build() {
+    // 등간격(호길이) 리샘플 → 인접 타깃 간격이 모두 동일.
     gridPts = resample(KNOT, N);
-    anchor = mapGrid(KNOT[0]);
-    rest = Math.min(W, H) * 0.5 / (N - 1);
+    const gridLen = polyLen(gridPts) || 1;
+    // 로프(화면) 길이 = 매듭 경로 길이가 되도록 sc 도출 → 제약(rest)과 타깃이 완전 정합.
+    // 자유 낙하 시 화면 안에 드리우도록 min(W,H)*0.6 로 제한(720p: anchor 0.12H → ~0.72H).
+    const ropeLen = Math.min(W, H) * 0.60;
+    const sc = ropeLen / gridLen;
+    rest = ropeLen / (N - 1);
+    anchor = { x: W / 2, y: H * 0.12 };   // 상단 고정점(매듭 도안 첫 점 = 고정점)
+    const g0 = gridPts[0];
+    target = gridPts.map(g => ({ x: anchor.x + (g[0] - g0[0]) * sc, y: anchor.y + (g[1] - g0[1]) * sc }));
     P = [];
     for (let i = 0; i < N; i++) {
       const x = anchor.x, y = anchor.y + i * rest;
       P.push({ x, y, ox: x, oy: y, pin: i === 0 });
     }
-    target = gridPts.map(mapGrid);
   }
 
   function setup() {
@@ -83,13 +91,13 @@ export default (() => {
       let ax = 0, ay = g;
       if (m === 'free') { ax = noise2(i * 0.12, cycleT * 0.5) * 900; }
       else if (m === 'release') { ax = noise2(i * 0.12, cycleT * 0.5) * 400; }
-      else if (m === 'knot') { ay = g * 0.15; }
+      else if (m === 'knot') { ay = g * 0.05; }   // 스프링이 지배하도록 중력 약화
       const vx = (p.x - p.ox) * damp, vy = (p.y - p.oy) * damp;
       p.ox = p.x; p.oy = p.y;
       p.x += vx + ax * dt2; p.y += vy + ay * dt2;
     }
     if (m === 'knot') {                 // 타깃으로 스프링 수렴(위치 lerp)
-      const kf = 1 - Math.exp(-dt * 3);
+      const kf = 1 - Math.exp(-dt * 5);
       for (let i = 1; i < N; i++) {
         if (i === grab) continue;
         P[i].x = lerp(P[i].x, target[i].x, kf);
