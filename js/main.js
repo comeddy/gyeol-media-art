@@ -38,7 +38,7 @@ let hintTimer = 0;       // 힌트 페이드 타이머
 let suppressHash = false;// 훅이 건 hash 변경으로 인한 route() 재실행 억제
 
 // ── 전역 훅 & 에러 수집 ─────────────────────────────────────────────────
-const GY = { mountWork, unmountWork, currentErrors: [] };
+const GY = { mountWork, unmountWork, currentErrors: [], pauseLoop, resumeLoop };
 window.__GYEOL__ = GY;
 const pushErr = (msg) => { try { GY.currentErrors.push(String(msg)); } catch { /* noop */ } };
 window.addEventListener('error', (e) => pushErr(e.message || (e.error && e.error.message) || e.type));
@@ -232,6 +232,10 @@ function showViewerChrome(work) {
 // ── RAF 루프 (main.js 소유) ─────────────────────────────────────────────
 function startLoop() { stopLoop(); lastT = performance.now(); rafId = requestAnimationFrame(loop); }
 function stopLoop() { if (rafId) { cancelAnimationFrame(rafId); rafId = 0; } }
+// selftest 훅 (__GYEOL__.pauseLoop/resumeLoop): main RAF를 멈추고 마운트된 인스턴스를 돌려준다.
+//   하네스는 이 인스턴스의 frame(t,dt)을 동기로 직접 호출해 이중 구동 없이 측정한다.
+function pauseLoop() { stopLoop(); return current && current.inst; }
+function resumeLoop() { startLoop(); }
 function loop(t) {
   rafId = requestAnimationFrame(loop);
   const dt = Math.min((t - lastT) / 1000, DT_MAX);
@@ -398,3 +402,6 @@ window.addEventListener('hashchange', () => {
 });
 
 route(); // 초기 진입 (모듈 스크립트는 body 끝에 있어 DOM 준비 완료)
+
+// 전수 스모크 하네스 — ?selftest 일 때만 지연 로드 (프로덕션 번들에 영향 없음)
+if (location.search.includes('selftest')) import('./selftest.js');
