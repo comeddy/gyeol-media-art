@@ -4,7 +4,7 @@
 [![Works](https://img.shields.io/badge/works-32-green.svg)]()
 [![Wings](https://img.shields.io/badge/wings-8-blue.svg)]()
 [![No Build](https://img.shields.io/badge/build-none-brightgreen.svg)]()
-[![Live Demo](https://img.shields.io/badge/demo-live-orange.svg)](https://d2on4700va90cx.cloudfront.net/)
+[![Live Demo](https://img.shields.io/badge/demo-live-orange.svg)](https://gyeol.zerojin.art/)
 
 <a href="#english"><img src="https://img.shields.io/badge/lang-English-blue.svg" alt="English"></a>
 <a href="#korean"><img src="https://img.shields.io/badge/lang-한국어-red.svg" alt="Korean"></a>
@@ -23,7 +23,7 @@ An interactive generative media art exhibition that reimagines Korean aesthetics
 
 The entire exhibition is a build-free static web app — no framework, no bundler, no dependencies to install. Every sensor and heavy feature degrades gracefully, so a work that expects a microphone or a webcam still runs with a pointer fallback when those are unavailable.
 
-Live demo: **https://d2on4700va90cx.cloudfront.net/**
+Live demo: **https://gyeol.zerojin.art/**
 
 ## Features
 
@@ -156,7 +156,7 @@ This project does not grant a license for reuse, redistribution, or modification
 
 전시 전체가 빌드가 필요 없는 정적 웹 앱입니다 — 프레임워크도, 번들러도, 설치할 의존성도 없습니다. 모든 센서와 무거운 기능은 우아하게 저하되어, 마이크나 웹캠을 기대하는 작품도 해당 장치가 없을 때 pointer 폴백으로 동작합니다.
 
-라이브 데모: **https://d2on4700va90cx.cloudfront.net/**
+라이브 데모: **https://gyeol.zerojin.art/**
 
 ## 주요 기능
 

@@ -28,4 +28,4 @@ aws cloudfront create-invalidation \
   --query 'Invalidation.{Id:Id,Status:Status}' \
   --output json
 
-echo "배포 완료: https://d2on4700va90cx.cloudfront.net/"
+echo "배포 완료: https://gyeol.zerojin.art/"
