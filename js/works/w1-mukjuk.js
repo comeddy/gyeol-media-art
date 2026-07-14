@@ -1,9 +1,13 @@
 // 결 · GYEOL — 1관 묵향 · 묵죽(墨竹) Ink Bamboo
 // 먹빛 대숲이 바람에 흔들린다. 줄기는 마디(節) 단위 세그먼트로 서고, 마디마다
 // 잎 클러스터(먹 농담 3톤)가 돋는다. 바람이 셀수록 크게 눕고 잎은 파르르 떤다.
-// 바람 = 0.15 + mic.level()*2.5. 마이크 미가용 시 포인터 드래그 x속도가 바람.
+// 바람 목표치 = 0.15 + mic.level()*2.5 — 원시 RMS를 그대로 쓰면 경련하듯 떨리므로
+//   비대칭 관성(빠른 attack·느린 release)의 엔벨로프 팔로워로 부드럽게 따라간다.
+//   마이크 미가용 시 포인터 드래그 x속도가 바람.
 // 입체 배치: 각 그루에 깊이 z(0=전경·1=원경). 원경일수록 작게·옅게(대기원근)·
 //   위쪽 뿌리(지평선 후퇴)·바람에 덜 흔들린다(시차). 원→근 순서로 겹쳐 그린다.
+// 실죽(實竹) 점경: 가장 가까운 2~3그루만 실제 대나무 색(청죽 줄기·초록 잎 3톤)을
+//   입힌다 — 수묵 사이 채색 악센트. 근경에 둬야 대기원근에 색이 바래지 않는다.
 import { fitCanvas, noise2, mulberry32, lerp, clamp, TAU } from '../core/canvas.js';
 
 export default (() => {
@@ -11,9 +15,14 @@ export default (() => {
   let W = 0, H = 0, dpr = 1;
   let stalks = null, nxs = null, nys = null;
   let windPtr = 0, lastPX = null, lastRustle = -1;
+  let windSm = 0.15;                 // 관성 바람 — 실제 흔들림에 쓰는 부드러운 값
 
   const TONES = [[26, 22, 17], [14, 12, 10], [74, 64, 52]];  // 흑 · 먹빛 · 옅은먹
   const PAPER = [230, 224, 207];  // 대기원근: 원경 먹을 지면(한지)색으로 섞어 흐린다.
+  // 실죽 팔레트 — 청죽 줄기·마디, 잎 농담 3톤(진초록·심록·연초록).
+  const STEM_RGB = [86, 124, 66];
+  const NODE_RGB = [52, 86, 48];
+  const LEAF_RGBS = [[56, 96, 52], [38, 74, 42], [118, 146, 84]];
 
   // 먹 tone을 깊이 z만큼 한지색으로 보간 — 멀수록 옅고 채도 낮은 회먹이 된다.
   function fade(tone, z, strength = 0.7) {
@@ -81,6 +90,14 @@ export default (() => {
         }
       }
       stalks.push(st);
+    }
+    // 실죽 채색 후처리 — 루프 밖에서 r()을 소비해 기존 배치 난수열을 보존한다.
+    const nReal = 2 + (r() * 2 | 0);             // 2~3그루
+    const near = stalks.slice().sort((a, b) => a.z - b.z).slice(0, nReal);
+    for (const st of near) {
+      st.inkRGB = fade(STEM_RGB, st.z);
+      st.nodeRGB = fade(NODE_RGB, st.z);
+      for (const lf of st.leaves) lf.tone = fade(LEAF_RGBS[r() * 3 | 0], st.z);
     }
     stalks.sort((a, b) => b.z - a.z);            // painter's: 원경(z큰)부터 → 근경이 위에 겹침
     nxs = new Float32Array(maxNodes);
@@ -153,6 +170,7 @@ export default (() => {
       audio = ctx.audio; sensors = ctx.sensors;
       cv = ctx.canvas;
       W = ctx.width; H = ctx.height;
+      windSm = 0.15;                 // 재마운트 시 잔풍 이월 방지
       setup();
     },
 
@@ -161,9 +179,13 @@ export default (() => {
       const micOn = sensors && sensors.mic.available;
       const level = micOn ? sensors.mic.level() : 0;
       windPtr *= Math.max(0, 1 - dt * 3);          // 포인터 바람 감쇠
-      const wind = 0.15 + (micOn ? level * 2.5 : windPtr);
-      for (const st of stalks) drawStalk(st, t, wind);
-      // 강풍 순간 잎 스치는 소리(스로틀).
+      const target = 0.15 + (micOn ? level * 2.5 : windPtr);
+      // 바람 관성: 돌풍은 빠르게 일고(attack) 잦아들 땐 천천히 눕는다(release).
+      // 지수형이라 프레임레이트와 무관하게 같은 감쇠 곡선을 그린다.
+      const rate = target > windSm ? 4.5 : 1.1;
+      windSm += (target - windSm) * (1 - Math.exp(-dt * rate));
+      for (const st of stalks) drawStalk(st, t, windSm);
+      // 강풍 순간 잎 스치는 소리(스로틀) — 소리 이벤트라 원신호 level로 즉각 판정.
       if (level > 0.4 && audio && t - lastRustle > 0.5) {
         audio.tone({ deg: 4, oct: 1, vol: 0.08 });
         lastRustle = t;

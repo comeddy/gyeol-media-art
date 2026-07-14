@@ -1,6 +1,8 @@
 // 결 · GYEOL — 1관 묵향 · 일필(一筆) One Stroke
 // 한 번의 붓질 안에 갈필(乾)과 윤필(潤)이 함께 산다. 드래그 속도가 화법을 가른다.
-// 획은 중심 폴리라인 + 좌우 브리슬 가닥(시드 고정)으로 이뤄지고, 누적된 획은
+// 획 = 짙은 획심(윤필일수록 넓고 진하게) + 좌우 브리슬 가닥(시드 고정).
+// 꾹 누르면(붓 정지) 먹이 스며 원형으로 번진다 — frame()에서 √시간 성장 블룸.
+// 속도 판정은 EMA(drySm)로 관성을 줘 굵기가 튀지 않는다. 누적된 획은
 // 40초에 걸쳐 반투명 한지색 페이드로 서서히 바랜다.
 // 성능: 획은 persistent 오프스크린(strokes)에 누적 렌더 — 매 프레임 재그리기 없음.
 //   프레임당 비용 = paper blit + strokes 페이드 fillRect + strokes blit.
@@ -11,6 +13,8 @@ export default (() => {
   let W = 0, H = 0, dpr = 1;
   let last = null;             // 직전 포인터 점 { x, y }
   let bristles = null;         // 현재 획의 가닥 프로필 [{ frac, alpha, tone }]
+  let holdT = 0;               // 현 위치에 붓이 머문 시간(초) — 꾹 누름 번짐 축적
+  let drySm = 0.35;            // 갈필/윤필 판정 관성(EMA) — 굵기 튐 방지
   let seed = 0x1f;             // 획마다 증가하는 시드
   let rnd = mulberry32(seed);  // 갈필 끊김 판정용
 
@@ -94,10 +98,15 @@ export default (() => {
     const spread = width * (0.5 + dry * 1.0);      // 갈필일수록 가닥 벌어짐
     // 윤필 번짐 헤일로(느릴 때만).
     if (dry < 0.4) {
-      scx.strokeStyle = 'rgba(30,26,20,0.05)';
-      scx.lineWidth = width * 1.5;
+      scx.strokeStyle = 'rgba(30,26,20,0.07)';
+      scx.lineWidth = width * 1.7;
       scx.beginPath(); scx.moveTo(x0, y0); scx.lineTo(x1, y1); scx.stroke();
     }
+    // 획심(核): 먹이 실린 심지 — 느릴수록 넓고 짙어 힘있는 획이 된다.
+    // 세그먼트가 겹치며 알파가 쌓여 윤필 중심은 거의 순먹으로 채워진다.
+    scx.strokeStyle = `rgba(22,19,15,${lerp(0.45, 0.06, dry)})`;
+    scx.lineWidth = width * lerp(0.9, 0.25, dry);
+    scx.beginPath(); scx.moveTo(x0, y0); scx.lineTo(x1, y1); scx.stroke();
     const bt = Math.max(0.7, width / bristles.length * (1.1 - dry * 0.5));
     for (const b of bristles) {
       if (dry > 0.15 && rnd() < dry * 0.5) continue;  // 갈필 끊김
@@ -105,7 +114,7 @@ export default (() => {
       const ox = nx * off, oy = ny * off;
       // 먹 농담 3톤: 짙은 흑 / 먹빛 / 옅은 먹.
       const t3 = b.tone < 0.34 ? [14, 12, 10] : b.tone < 0.7 ? [26, 22, 17] : [54, 46, 36];
-      const a = clamp(lerp(0.5, 0.13, dry) * b.alpha, 0.03, 0.7);
+      const a = clamp(lerp(0.62, 0.13, dry) * b.alpha, 0.03, 0.7);
       scx.strokeStyle = `rgba(${t3[0]},${t3[1]},${t3[2]},${a})`;
       scx.lineWidth = bt;
       scx.beginPath();
@@ -120,6 +129,7 @@ export default (() => {
       audio = ctx.audio;
       cv = ctx.canvas;
       W = ctx.width; H = ctx.height;
+      last = null; holdT = 0; drySm = 0.35;   // 재마운트 시 잔여 상태 이월 방지
       setup();
     },
 
@@ -132,6 +142,20 @@ export default (() => {
       scx.fillStyle = `rgba(0,0,0,${fade})`;
       scx.fillRect(0, 0, W, H);
       scx.restore();
+      // 꾹 누름 번짐: 붓이 머무는 동안 먹이 스며 원형으로 번진다.
+      // 반지름은 √시간(확산), 짙기는 프레임마다 쌓여 중심부터 순먹이 된다.
+      if (last && bristles) {
+        holdT += dt;
+        if (holdT > 0.12) {
+          const g = clamp((holdT - 0.12) / 2.2, 0, 1);
+          const r = 10 + 36 * Math.sqrt(g);
+          const grad = scx.createRadialGradient(last.x, last.y, r * 0.15, last.x, last.y, r);
+          grad.addColorStop(0, `rgba(16,13,10,${clamp(dt * 2.2, 0, 0.06)})`);
+          grad.addColorStop(1, 'rgba(16,13,10,0)');
+          scx.fillStyle = grad;
+          scx.beginPath(); scx.arc(last.x, last.y, r, 0, TAU); scx.fill();
+        }
+      }
       cx.drawImage(strokes, 0, 0, W, H);
     },
 
@@ -139,18 +163,21 @@ export default (() => {
       if (e.type === 'down') {
         newStroke();
         last = { x: e.x, y: e.y };
-        // 붓을 대는 첫 점(작은 먹점).
-        scx.fillStyle = 'rgba(20,17,13,0.5)';
-        scx.beginPath(); scx.arc(e.x, e.y, 6, 0, TAU); scx.fill();
+        holdT = 0; drySm = 0.3;      // 붓을 막 댄 상태 — 중간보다 촉촉하게 시작
+        // 붓을 대는 첫 점(먹점).
+        scx.fillStyle = 'rgba(20,17,13,0.55)';
+        scx.beginPath(); scx.arc(e.x, e.y, 8, 0, TAU); scx.fill();
         if (audio) audio.tone({ deg: 2, oct: -1, vol: 0.12 });
       } else if (e.type === 'move' && last && bristles) {
         const dist = Math.hypot(e.x - last.x, e.y - last.y);
+        if (dist > 2.5) holdT = 0;   // 이동 재개 → 번짐 중단
         const dry = clamp(dist / 25, 0, 1);
-        const width = lerp(28, 6, dry);
-        drawSeg(last.x, last.y, e.x, e.y, dry, width);
+        drySm = lerp(drySm, dry, 0.35);   // 붓 관성 — 급격한 굵기 변화 완화
+        const width = lerp(40, 5, drySm);
+        drawSeg(last.x, last.y, e.x, e.y, drySm, width);
         last = { x: e.x, y: e.y };
       } else if (e.type === 'up') {
-        last = null;
+        last = null; holdT = 0;
       }
     },
 
